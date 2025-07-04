@@ -31,18 +31,6 @@ npm start
 npm run dev
 ```
 
-## Project Structure
-
-```
-backend/
-├── src/
-│   ├── models/
-│   ├── routes/
-│   └── services/
-├── package.json
-└── README.md
-```
-
 ## License
 
 [MIT](../LICENSE)
