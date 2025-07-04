@@ -1,13 +1,16 @@
 import axios from "axios";
+import UserToken from "../models/userToken";
 
 class MicrosoftGraphService {
   clientId: string | undefined;
   clientSecret: string | undefined;
+  tenantId: string | undefined;
   baseURL: string;
 
   constructor() {
     this.clientId = process.env.MICROSOFT_CLIENT_ID;
     this.clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+    this.tenantId = process.env.MICROSOFT_TENANT_ID;
     this.baseURL = "https://graph.microsoft.com/v1.0";
   }
 
@@ -21,13 +24,12 @@ class MicrosoftGraphService {
     }
 
     try {
-      const tokenUrl =
-        "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+      const tokenUrl = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`;
 
       const params = new URLSearchParams({
         client_id: this.clientId,
         client_secret: this.clientSecret,
-        scope: "Files.Read Sites.Read.All offline_access",
+        scope: "Files.Read offline_access",
         code: code,
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
@@ -59,13 +61,12 @@ class MicrosoftGraphService {
     }
 
     try {
-      const tokenUrl =
-        "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+      const tokenUrl = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`;
 
       const params = new URLSearchParams({
         client_id: this.clientId,
         client_secret: this.clientSecret,
-        scope: "Files.Read Sites.Read.All offline_access",
+        scope: "Files.Read.All offline_access",
         refresh_token: refreshToken,
         grant_type: "refresh_token",
       });
@@ -86,37 +87,9 @@ class MicrosoftGraphService {
     }
   }
 
-  async getValidAccessToken(auth0UserId) {
-    return "";
-    // const userToken = await UserToken.findOne({ auth0UserId });
-
-    // if (!userToken) {
-    //   throw new Error("No Microsoft tokens found for user");
-    // }
-
-    // const now = new Date();
-    // const expiresAt = new Date(userToken.microsoftTokens.expiresAt);
-
-    // // If token expires within 5 minutes, refresh it
-    // if (expiresAt <= new Date(now.getTime() + 5 * 60 * 1000)) {
-    //   const refreshedTokens = await this.refreshAccessToken(
-    //     userToken.microsoftTokens.refreshToken
-    //   );
-
-    //   userToken.microsoftTokens.accessToken = refreshedTokens.access_token;
-    //   if (refreshedTokens.refresh_token) {
-    //     userToken.microsoftTokens.refreshToken = refreshedTokens.refresh_token;
-    //   }
-    //   userToken.microsoftTokens.expiresAt = new Date(
-    //     now.getTime() + refreshedTokens.expires_in * 1000
-    //   );
-
-    //   await userToken.save();
-
-    //   return refreshedTokens.access_token;
-    // }
-
-    // return userToken.microsoftTokens.accessToken;
+  async getValidAccessToken(auth0UserId: string) {
+    // ToDo: Retrieve the user's refresh token from Key Vault and then get a valid access token
+    return "access token";
   }
 
   async getUserDrives(accessToken: string) {
@@ -131,6 +104,29 @@ class MicrosoftGraphService {
     } catch (error: any) {
       console.error("Get drives error:", error.response?.data || error.message);
       throw new Error("Failed to fetch user drives");
+    }
+  }
+
+  async getSharedWithMeFolders(accessToken: string) {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/me/drive/sharedWithMe?allowexternal=true`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const allItems = response.data.value || [];
+      const folders = allItems.filter((item: any) => item.folder != null);
+      return folders;
+    } catch (error: any) {
+      console.error(
+        "Get shared with me folders error:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to fetch shared with me folders");
     }
   }
 
@@ -158,6 +154,26 @@ class MicrosoftGraphService {
         error.response?.data || error.message
       );
       throw new Error("Failed to fetch folders");
+    }
+  }
+
+  async getFollowedSites(accessToken: string) {
+    try {
+      const response = await axios.get(`${this.baseURL}/me/followedSites`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params: {
+          $select: "id,name,webUrl,displayName",
+        },
+      });
+      return response.data.value || [];
+    } catch (error: any) {
+      console.error(
+        "Get followed sites error:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to fetch followed sites");
     }
   }
 

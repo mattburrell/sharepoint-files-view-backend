@@ -3,29 +3,30 @@ import microsoftGraphService from "../services/microsoftGraphService";
 
 const router = Router();
 
-// Get user's OneDrive and SharePoint folders
 router.get("/folders", async (req, res) => {
   try {
-    // Get valid access token
-    const accessToken = await microsoftGraphService.getValidAccessToken(
-      "userId"
-    );
+    const userId = "auth0UserId"; // Replace with actual user ID from request context etc
+    const accessToken = await microsoftGraphService.getValidAccessToken(userId);
 
-    // Fetch OneDrive folders
     const oneDriveFolders = await microsoftGraphService.getFolders(accessToken);
 
-    // Fetch SharePoint sites
+    const sharedWithMeFolders =
+      await microsoftGraphService.getSharedWithMeFolders(accessToken);
+
     const sharePointSites = await microsoftGraphService.getSharePointSites(
       accessToken
     );
 
-    // Combine results
     const folders = [
-      ...oneDriveFolders.map((folder) => ({
+      ...sharedWithMeFolders.map((folder: any) => ({
+        ...folder,
+        type: "shared",
+      })),
+      ...oneDriveFolders.map((folder: any) => ({
         ...folder,
         type: "onedrive",
       })),
-      ...sharePointSites.map((site) => ({
+      ...sharePointSites.map((site: any) => ({
         id: site.id,
         name: site.displayName || site.name,
         webUrl: site.webUrl,
@@ -38,9 +39,10 @@ router.get("/folders", async (req, res) => {
     console.error("Get folders error:", error);
 
     if (error.message === "No Microsoft tokens found for user") {
-      return res.status(404).json({
+      res.status(404).json({
         error: "Microsoft account not connected",
       });
+      return;
     }
 
     res.status(500).json({
@@ -49,7 +51,6 @@ router.get("/folders", async (req, res) => {
   }
 });
 
-// Disconnect Microsoft account
 router.delete("/disconnect", async (req, res) => {
   try {
     res.json({

@@ -5,6 +5,8 @@ const router = Router();
 
 router.post("/microsoft/callback", async (req, res) => {
   try {
+    const userId = "auth0UserId"; // Replace with actual user ID from request context etc
+
     const { code, codeVerifier, redirectUri } = req.body;
 
     if (!code || !codeVerifier || !redirectUri) {
@@ -20,10 +22,14 @@ router.post("/microsoft/callback", async (req, res) => {
       redirectUri
     );
 
-    const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
-    console.log("Token data received:", tokenData);
-    console.log("Token expires at:", expiresAt);
-    // Save tokens to the database (assuming you have a UserToken model)
+    if (!tokenData || !tokenData.access_token) {
+      res.status(400).json({
+        error: "Failed to exchange authorization code for tokens",
+      });
+      return;
+    }
+
+    // ToDo: Save refresh token to Key Vault
 
     res.json({
       success: true,

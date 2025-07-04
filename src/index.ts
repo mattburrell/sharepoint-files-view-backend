@@ -1,10 +1,13 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 import oauthRoutes from "./routes/oauth";
 import microsoftRoutes from "./routes/microsoft";
 
 const app = express();
-const port = 5000;
+const port = 3000;
 
 app.use(
   cors({
