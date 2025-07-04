@@ -6,7 +6,7 @@ This backend service issues secure access tokens for SharePoint file access via 
 
 ### Prerequisites
 
-- Node.js (v18+)
+- Node.js (v20+)
 - npm or yarn
 
 ### Installation
